@@ -9,6 +9,8 @@
             [lipas.ui.utils :refer [<== ==>] :as utils]
             [reagent.core :as r]))
 
+;; Kudos https://github.com/jleh/Leaflet.MML-layers
+
 (def base-url "https://localhost/mapproxy/wmts")
 
 (def urls
@@ -43,12 +45,14 @@
                                                 #js[1548576, 6291456])}))
 
 (def map-opts
-  #js{:crs     crs
-      :center  #js [61 25]
-      :minZoom 0
-      :maxZoom (dec (count resolutions))
-      :zoom    6
-      :layers  (clj->js (vals base-layers))})
+  #js{:crs             crs
+      :center          #js [61 25]
+      :minZoom         0
+      :maxZoom         (dec (count resolutions))
+      :continuousWorld true
+      :worldCopyJump   false
+      :zoom            6
+      :layers          (clj->js (vals base-layers))})
 
 (defn add-layer-switcher [lmap {:keys [base-layers overlays]}]
   (-> js/L
