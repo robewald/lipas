@@ -7,7 +7,8 @@
             [lipas.ui.map.subs :as subs]
             [lipas.ui.mui :as mui]
             [lipas.ui.utils :refer [<== ==>] :as utils]
-            [reagent.core :as r]))
+            [reagent.core :as r]
+            [re-frame.core :as re-frame]))
 
 ;; Kudos https://github.com/jleh/Leaflet.MML-layers
 
@@ -70,10 +71,13 @@
              (==> [::events/set-current-position lat lon]))))
     lmap))
 
-(defn update-leaflet [lmap layers props]
-  (prn "Count: "(count (:geoms props)))
+(defn bind-popup [feature layer]
+  (.bindPopup layer (-> feature .-properties .-name)))
+
+(defn update-markers [lmap layers props]
   (let [markers (-> layers :overlays :markers)
-        geoJSON (js/L.geoJSON (clj->js (:geoms props)))]
+        geoJSON (js/L.geoJSON (clj->js (:geoms props))
+                              #js{:onEachFeature bind-popup})]
     (.addLayer markers geoJSON)
     (.addLayer lmap markers)))
 
@@ -87,22 +91,19 @@
                                               :xs    12
                                               :style {:flex "1 1 auto"}}])
       :component-did-mount  (fn [comp]
-                              (prn "tick mount")
                               (let [props (r/props comp)
                                     lmap  (-> (mount-leaflet @layers)
-                                              (update-leaflet @layers props))]
+                                              (update-markers @layers props))]
                                 (reset! map-state lmap)))
       :component-did-update (fn [comp]
-                              (prn "tick update")
                               (let [props (r/props comp)]
-                                (update-leaflet @map-state @layers props)))
+                                (update-markers @map-state @layers props)))
       :display-name         "leaflet-inner"})))
 
 (defn map-outer []
-  (let [geoms (<== [::subs/geometries])]
+  (let [geoms (re-frame/subscribe [::subs/geometries])]
     (fn []
-      (prn "tick outer")
-      [map-inner {:geoms geoms}])))
+      [map-inner {:geoms @geoms}])))
 
 (comment
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 3110])
