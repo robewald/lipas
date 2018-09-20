@@ -3,6 +3,7 @@
             cljsjs.leaflet-draw
             cljsjs.proj4leaflet
             cljsjs.leaflet-markercluster
+            [goog.object :as gobj]
             [lipas.ui.map.events :as events]
             [lipas.ui.map.subs :as subs]
             [lipas.ui.mui :as mui]
@@ -11,6 +12,8 @@
             [re-frame.core :as re-frame]))
 
 ;; Kudos https://github.com/jleh/Leaflet.MML-layers
+
+;; (set! *warn-on-infer* true)
 
 (def base-url "/mapproxy/wmts")
 
@@ -55,7 +58,7 @@
       :zoom            2
       :layers          (clj->js [(:taustakartta base-layers)])})
 
-(defn add-layer-switcher [lmap {:keys [base-layers overlays]}]
+(defn add-layer-switcher [^js/L.Map lmap {:keys [base-layers overlays]}]
   (-> js/L
       .-control
       (.layers (clj->js base-layers) (clj->js overlays))
@@ -66,13 +69,13 @@
     (add-layer-switcher lmap layers)
     (.on lmap "mousemove"
          (fn [e]
-           (let [lat (-> e .-latlng .-lat)
-                 lon (-> e .-latlng .-lng)]
+           (let [lat (gobj/getValueByKeys e "latlng" "lat")
+                 lon (gobj/getValueByKeys e "latlng" "lon")]
              (==> [::events/set-current-position lat lon]))))
     lmap))
 
 (defn bind-popup [feature layer]
-  (.bindPopup layer (-> feature .-properties .-name)))
+  (.bindPopup layer (gobj/getValueByKeys feature "properties" "name")))
 
 (defn update-markers [lmap layers props]
   (let [markers (-> layers :overlays :markers)
