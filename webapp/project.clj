@@ -30,6 +30,7 @@
                  [cljsjs/react-autosuggest "9.3.4-0"]
                  [cljsjs/leaflet "1.3.4-0"]
                  [cljsjs/leaflet-draw "0.4.12-0"]
+                 [cljsjs/leaflet-markercluster "1.3.0-0"]
                  [cljsjs/proj4leaflet "1.0.2-1"]
                  [cljsjs/proj4 "2.5.0-0"]
 

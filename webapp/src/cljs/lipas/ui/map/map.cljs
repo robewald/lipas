@@ -2,6 +2,7 @@
   (:require cljsjs.leaflet
             cljsjs.leaflet-draw
             cljsjs.proj4leaflet
+            cljsjs.leaflet-markercluster
             [lipas.ui.map.events :as events]
             [lipas.ui.map.subs :as subs]
             [lipas.ui.mui :as mui]
@@ -16,11 +17,14 @@
    :maastokartta (str base-url "/mml_maastokartta/mml_grid/{z}/{x}/{y}.png")
    :ortokuva     (str base-url "/mml_ortokuva/mml_grid/{z}/{x}/{y}.png")})
 
-(def layers
+(def base-layers
   {;:osm          (.tileLayer js/L (:osm urls))
-   :taustakartta (.tileLayer js/L (:taustakartta urls))
+   :ortokuva     (.tileLayer js/L (:ortokuva urls))
    :maastokartta (.tileLayer js/L (:maastokartta urls))
-   :ortokuva     (.tileLayer js/L (:ortokuva urls))})
+   :taustakartta (.tileLayer js/L (:taustakartta urls))})
+
+(def overlays
+  {:markers (js/L.markerClusterGroup)})
 
 (def resolutions
   #js[8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5, 0.25])
@@ -39,38 +43,63 @@
                                                 #js[1548576, 6291456])}))
 
 (def map-opts
-  #js{:crs crs
-      :center #js [61 25]
-      :zoom   6
-      :layers (clj->js (vals layers))})
+  #js{:crs     crs
+      :center  #js [61 25]
+      :minZoom 0
+      :maxZoom (dec (count resolutions))
+      :zoom    6
+      :layers  (clj->js (vals base-layers))})
 
-(defn mount-leaflet []
+(defn add-layer-switcher [lmap {:keys [base-layers overlays]}]
+  (-> js/L
+      .-control
+      (.layers (clj->js base-layers) (clj->js overlays))
+      (.addTo lmap)))
+
+(defn mount-leaflet [layers]
   (let [lmap (.map js/L "map" map-opts)]
-    (-> js/L
-        .-control
-        (.layers (clj->js layers))
-        (.addTo lmap))
+    (add-layer-switcher lmap layers)
     (.on lmap "mousemove"
          (fn [e]
-           (==> [::events/set-current-position
-                               (-> e .-latlng .-lng)
-                               (-> e .-latlng .-lat)])))))
+           (let [lat (-> e .-latlng .-lat)
+                 lon (-> e .-latlng .-lng)]
+             (==> [::events/set-current-position lat lon]))))
+    lmap))
 
-(defn update-leaflet [x]
-  ;; todo update map with features
-  (println x))
+(defn update-leaflet [lmap layers props]
+  (prn "Count: "(count (:geoms props)))
+  (let [markers (-> layers :overlays :markers)
+        geoJSON (js/L.geoJSON (clj->js (:geoms props)))]
+    (.addLayer markers geoJSON)
+    (.addLayer lmap markers)))
 
 (defn map-inner []
-  (let [lmap (atom nil)]
+  (let [layers    (atom {:base-layers base-layers
+                         :overlays    overlays})
+        map-state (atom nil)]
     (r/create-class
      {:reagent-render       (fn [] [mui/grid {:id    "map"
                                               :item  true
                                               :xs    12
                                               :style {:flex "1 1 auto"}}])
-      :component-did-mount  mount-leaflet
-      :component-did-update update-leaflet
+      :component-did-mount  (fn [comp]
+                              (prn "tick mount")
+                              (let [props (r/props comp)
+                                    lmap  (-> (mount-leaflet @layers)
+                                              (update-leaflet @layers props))]
+                                (reset! map-state lmap)))
+      :component-did-update (fn [comp]
+                              (prn "tick update")
+                              (let [props (r/props comp)]
+                                (update-leaflet @map-state @layers props)))
       :display-name         "leaflet-inner"})))
 
 (defn map-outer []
   (let [geoms (<== [::subs/geometries])]
-    [map-inner]))
+    (fn []
+      (prn "tick outer")
+      [map-inner {:geoms geoms}])))
+
+(comment
+  (==> [:lipas.ui.sports-sites.events/get-by-type-code 3110])
+  (==> [:lipas.ui.sports-sites.events/get-by-type-code 3130]))
