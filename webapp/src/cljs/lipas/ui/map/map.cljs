@@ -53,7 +53,7 @@
       :continuousWorld true
       :worldCopyJump   false
       :zoom            6
-      :layers          (clj->js (vals base-layers))})
+      :layers          (clj->js [(:taustakartta base-layers)])})
 
 (defn add-layer-switcher [lmap {:keys [base-layers overlays]}]
   (-> js/L
