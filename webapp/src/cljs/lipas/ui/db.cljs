@@ -71,4 +71,9 @@
    ;; User
    :user
    {:login-form        {}
-    :registration-form {}}})
+    :registration-form {}}
+
+   ;; Map
+   :map
+   {:filters {:ice-stadium   true
+              :swimming-pool false}}})

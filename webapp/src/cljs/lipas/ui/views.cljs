@@ -77,6 +77,26 @@
         ;; Main panel
         [show-panel active-panel tr logged-in?]
 
+        ;; Fixed Map tools
+        ;; TODO move this under map.cljs and remove hack
+        (when (= (utils/current-path) "/#/liikuntapaikat")
+          (let [filters (<== [:lipas.ui.map.subs/filters])
+                toggle  #(==> [:lipas.ui.map.events/toggle-filter %])]
+            [mui/paper {:style {:position         :fixed
+                                :z-index          9999
+                                :background-color mui/gray3
+                                :bottom           0
+                                :left             0
+                                :padding-left     "1em"}}
+             [lui/checkbox
+              {:value     (-> filters :ice-stadium)
+               :label     "Jäähallit"
+               :on-change #(toggle :ice-stadium)}]
+             [lui/checkbox
+              {:value     (-> filters :swimming-pool)
+               :label     "Uimahallit"
+               :on-change #(toggle :swimming-pool)}]]))
+
         ;; Global UI-blocking confirmation dialog
         (when confirmation
           [lui/confirmation-dialog confirmation])

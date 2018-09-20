@@ -18,4 +18,4 @@
   [map/map-outer])
 
 (defn main [tr]
-  (create-panel tr))
+  [create-panel tr])

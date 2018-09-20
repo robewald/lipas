@@ -47,12 +47,12 @@
 
 (def map-opts
   #js{:crs             crs
-      :center          #js [61 25]
+      :center          #js [65 25]
       :minZoom         0
       :maxZoom         (dec (count resolutions))
       :continuousWorld true
       :worldCopyJump   false
-      :zoom            6
+      :zoom            2
       :layers          (clj->js [(:taustakartta base-layers)])})
 
 (defn add-layer-switcher [lmap {:keys [base-layers overlays]}]
@@ -78,6 +78,7 @@
   (let [markers (-> layers :overlays :markers)
         geoJSON (js/L.geoJSON (clj->js (:geoms props))
                               #js{:onEachFeature bind-popup})]
+    (.clearLayers markers)
     (.addLayer markers geoJSON)
     (.addLayer lmap markers)))
 
@@ -101,6 +102,10 @@
       :display-name         "leaflet-inner"})))
 
 (defn map-outer []
+  (==> [:lipas.ui.sports-sites.events/get-by-type-code 3110])
+  (==> [:lipas.ui.sports-sites.events/get-by-type-code 3130])
+  (==> [:lipas.ui.sports-sites.events/get-by-type-code 2510])
+  (==> [:lipas.ui.sports-sites.events/get-by-type-code 2520])
   (let [geoms (re-frame/subscribe [::subs/geometries])]
     (fn []
       [map-inner {:geoms @geoms}])))
