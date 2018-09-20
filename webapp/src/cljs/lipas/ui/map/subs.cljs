@@ -14,7 +14,6 @@
  ::geometries
  :<- [:lipas.ui.sports-sites.subs/latest-sports-site-revs]
  (fn [sites _]
-   (prn "Sub updated")
    (->> sites
         vals
         (map ->feature))))

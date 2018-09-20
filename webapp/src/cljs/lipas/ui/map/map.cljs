@@ -12,7 +12,7 @@
 
 ;; Kudos https://github.com/jleh/Leaflet.MML-layers
 
-(def base-url "https://localhost/mapproxy/wmts")
+(def base-url "/mapproxy/wmts")
 
 (def urls
   {;:osm          "http://{s}.tile.osm.org/{z}/{x}/{y}.png"
