@@ -75,5 +75,6 @@
 
    ;; Map
    :map
-   {:filters {:ice-stadium   true
-              :swimming-pool false}}})
+   {:base-layer :taustakartta
+    :filters    {:ice-stadium   true
+                 :swimming-pool false}}})

@@ -64,9 +64,14 @@
       (.layers (clj->js base-layers) (clj->js overlays))
       (.addTo lmap)))
 
-(defn mount-leaflet [layers]
+(defn mount-leaflet [layers base-layer]
+  (prn base-layer)
   (let [lmap (.map js/L "map" map-opts)]
     (add-layer-switcher lmap layers)
+    (-> layers
+        :base-layers
+        base-layer
+        (.addTo lmap))
     (.on lmap "mousemove"
          (fn [e]
            (let [lat (gobj/getValueByKeys e "latlng" "lat")
@@ -77,9 +82,9 @@
 (defn bind-popup [feature layer]
   (.bindPopup layer (gobj/getValueByKeys feature "properties" "name")))
 
-(defn update-markers [lmap layers props]
+(defn update-markers [lmap layers features]
   (let [markers (-> layers :overlays :markers)
-        geoJSON (js/L.geoJSON (clj->js (:geoms props))
+        geoJSON (js/L.geoJSON (clj->js features)
                               #js{:onEachFeature bind-popup})]
     (.clearLayers markers)
     (.addLayer markers geoJSON)
@@ -95,13 +100,16 @@
                                               :xs    12
                                               :style {:flex "1 1 auto"}}])
       :component-did-mount  (fn [comp]
+                              (prn "mount")
+                              (prn @map-state)
                               (let [props (r/props comp)
-                                    lmap  (-> (mount-leaflet @layers)
-                                              (update-markers @layers props))]
+                                    lmap  (-> (mount-leaflet @layers (:base-layer props))
+                                              (update-markers @layers (:geoms props)))]
                                 (reset! map-state lmap)))
       :component-did-update (fn [comp]
+                              (prn "update")
                               (let [props (r/props comp)]
-                                (update-markers @map-state @layers props)))
+                                (update-markers @map-state @layers (:geoms props))))
       :display-name         "leaflet-inner"})))
 
 (defn map-outer []
@@ -109,10 +117,8 @@
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 3130])
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 2510])
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 2520])
-  (let [geoms (re-frame/subscribe [::subs/geometries])]
+  (let [geoms      (re-frame/subscribe [::subs/geometries])
+        base-layer (re-frame/subscribe [::subs/base-layer])]
     (fn []
-      [map-inner {:geoms @geoms}])))
-
-(comment
-  (==> [:lipas.ui.sports-sites.events/get-by-type-code 3110])
-  (==> [:lipas.ui.sports-sites.events/get-by-type-code 3130]))
+      [map-inner {:geoms      @geoms
+                  :base-layer @base-layer}])))

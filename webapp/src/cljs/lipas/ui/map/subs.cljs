@@ -16,6 +16,11 @@
    (-> db :map :filters)))
 
 (re-frame/reg-sub
+ ::base-layer
+ (fn [db _]
+   (-> db :map :base-layer)))
+
+(re-frame/reg-sub
  ::geometries
  :<- [:lipas.ui.sports-sites.subs/latest-sports-site-revs]
  :<- [::filters]
