@@ -14,6 +14,7 @@ if [ $1 == "dev" ]
 then
     mapproxy-util serve-develop -b 0.0.0.0:8080 /mapproxy/mapproxy.yaml
 else
+    rm -f /mapproxy.yaml
     ln -s /mapproxy/mapproxy.yaml /mapproxy.yaml
     uwsgi --ini /uwsgi.conf
 fi
