@@ -75,6 +75,8 @@
 
    ;; Map
    :map
-   {:base-layer :taustakartta
-    :filters    {:ice-stadium   true
-                 :swimming-pool false}}})
+   {:center  {:lon 25 :lat 65}
+    :zoom    2
+    :basemap :taustakartta
+    :filters {:ice-stadium   true
+              :swimming-pool false}}})

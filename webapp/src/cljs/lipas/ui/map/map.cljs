@@ -23,14 +23,14 @@
    :maastokartta (str base-url "/mml_maastokartta/mml_grid/{z}/{x}/{y}.png")
    :ortokuva     (str base-url "/mml_ortokuva/mml_grid/{z}/{x}/{y}.png")})
 
-(def base-layers
-  {;:osm          (.tileLayer js/L (:osm urls))
-   :ortokuva     (.tileLayer js/L (:ortokuva urls))
-   :maastokartta (.tileLayer js/L (:maastokartta urls))
-   :taustakartta (.tileLayer js/L (:taustakartta urls))})
-
-(def overlays
-  {:markers (js/L.markerClusterGroup)})
+(defn init-layers []
+  {:basemaps
+   {;:osm          (.tileLayer js/L (:osm urls))
+    :ortokuva     (.tileLayer js/L (:ortokuva urls))
+    :maastokartta (.tileLayer js/L (:maastokartta urls))
+    :taustakartta (.tileLayer js/L (:taustakartta urls))}
+   :overlays
+   {:markers (js/L.markerClusterGroup)}})
 
 (def resolutions
   #js[8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5, 0.25])
@@ -48,36 +48,51 @@
                       :bounds      (js/L.bounds #js[-548576, 8388608]
                                                 #js[1548576, 6291456])}))
 
-(def map-opts
+(defn ->map-opts [{:keys  [base-layer zoom center]
+                   :or {zoom   2
+                        center {:lon 25 :lat 65}}}]
   #js{:crs             crs
-      :center          #js [65 25]
+      :center          #js[(:lat center) (:lon center)]
       :minZoom         0
       :maxZoom         (dec (count resolutions))
       :continuousWorld true
       :worldCopyJump   false
-      :zoom            2
-      :layers          (clj->js [(:taustakartta base-layers)])})
+      :zoom            zoom
+      :layers          #js[base-layer]})
 
-(defn add-layer-switcher [^js/L.Map lmap {:keys [base-layers overlays]}]
+(defn add-layer-switcher [^js/L.Map lmap {:keys [basemaps overlays]}]
   (-> js/L
       .-control
-      (.layers (clj->js base-layers) (clj->js overlays))
+      (.layers (clj->js basemaps) (clj->js overlays))
       (.addTo lmap)))
 
-(defn mount-leaflet [layers base-layer]
-  (prn base-layer)
-  (let [lmap (.map js/L "map" map-opts)]
+(defn init-leaflet [{:keys [basemap] :as opts}]
+  (let [layers     (init-layers)
+        base-layer (-> layers :basemaps basemap)
+        map-opts   (-> opts
+                       (assoc :base-layer base-layer)
+                       ->map-opts)
+        lmap       (.map js/L "map" map-opts)]
+
     (add-layer-switcher lmap layers)
-    (-> layers
-        :base-layers
-        base-layer
-        (.addTo lmap))
-    (.on lmap "mousemove"
+
+    (.on lmap "baselayerchange"
+         (fn [^js/L.LayersControlEvent e]
+           (let [basemap (-> e .-name keyword)]
+             (==> [::events/select-basemap basemap]))))
+
+    (.on lmap "moveend"
          (fn [e]
-           (let [lat (gobj/getValueByKeys e "latlng" "lat")
-                 lon (gobj/getValueByKeys e "latlng" "lon")]
-             (==> [::events/set-current-position lat lon]))))
-    lmap))
+           (let [lat  (-> lmap .getCenter .-lat)
+                 lon  (-> lmap .getCenter .-lng)]
+             (==> [::events/set-center lat lon]))))
+
+    (.on lmap "zoomend"
+         (fn [e]
+           (let [zoom (-> lmap .getZoom)]
+             (==> [::events/set-zoom zoom]))))
+
+    [lmap layers]))
 
 (defn bind-popup [feature layer]
   (.bindPopup layer (gobj/getValueByKeys feature "properties" "name")))
@@ -91,8 +106,7 @@
     (.addLayer lmap markers)))
 
 (defn map-inner []
-  (let [layers    (atom {:base-layers base-layers
-                         :overlays    overlays})
+  (let [layers    (atom nil)
         map-state (atom nil)]
     (r/create-class
      {:reagent-render       (fn [] [mui/grid {:id    "map"
@@ -100,16 +114,14 @@
                                               :xs    12
                                               :style {:flex "1 1 auto"}}])
       :component-did-mount  (fn [comp]
-                              (prn "mount")
-                              (prn @map-state)
-                              (let [props (r/props comp)
-                                    lmap  (-> (mount-leaflet @layers (:base-layer props))
-                                              (update-markers @layers (:geoms props)))]
+                              (let [{:keys [geoms] :as opts} (r/props comp)
+                                    [lmap layers*]           (init-leaflet opts)]
+                                (update-markers lmap layers* geoms)
+                                (reset! layers layers*)
                                 (reset! map-state lmap)))
       :component-did-update (fn [comp]
-                              (prn "update")
-                              (let [props (r/props comp)]
-                                (update-markers @map-state @layers (:geoms props))))
+                              (let [opts (r/props comp)]
+                                (update-markers @map-state @layers (:geoms opts))))
       :display-name         "leaflet-inner"})))
 
 (defn map-outer []
@@ -117,8 +129,12 @@
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 3130])
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 2510])
   (==> [:lipas.ui.sports-sites.events/get-by-type-code 2520])
-  (let [geoms      (re-frame/subscribe [::subs/geometries])
-        base-layer (re-frame/subscribe [::subs/base-layer])]
+  (let [geoms   (re-frame/subscribe [::subs/geometries])
+        basemap (re-frame/subscribe [::subs/basemap])
+        center  (re-frame/subscribe [::subs/center])
+        zoom    (re-frame/subscribe [::subs/zoom])]
     (fn []
-      [map-inner {:geoms      @geoms
-                  :base-layer @base-layer}])))
+      [map-inner {:geoms   @geoms
+                  :basemap @basemap
+                  :center  @center
+                  :zoom    @zoom}])))

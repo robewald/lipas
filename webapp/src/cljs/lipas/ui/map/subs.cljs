@@ -16,9 +16,19 @@
    (-> db :map :filters)))
 
 (re-frame/reg-sub
- ::base-layer
+ ::basemap
  (fn [db _]
-   (-> db :map :base-layer)))
+   (-> db :map :basemap)))
+
+(re-frame/reg-sub
+ ::center
+ (fn [db _]
+   (-> db :map :center)))
+
+(re-frame/reg-sub
+ ::zoom
+ (fn [db _]
+   (-> db :map :zoom)))
 
 (re-frame/reg-sub
  ::geometries
