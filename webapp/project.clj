@@ -118,6 +118,15 @@
      :figwheel     {:on-jsload "lipas.ui.core/mount-root"}
      :compiler     {:main                 lipas.ui.core
                     :npm-deps             false
+                    :foreign-libs
+                    [{:file     "src/js/leaflet_geometry_util.js"
+                      :provides ["leaflet-geometryutil"]
+                      :requires ["cljsjs.leaflet"]}
+                     {:file     "src/js/leaflet_snap.js"
+                      :provides ["leaflet-snap"]
+                      :requires ["cljsjs.leaflet"
+                                 "cljsjs.leaflet-draw"
+                                 "leaflet-geometryutil"]}]
                     :infer-externs        true
                     :output-to            "resources/public/js/compiled/app.js"
                     :output-dir           "resources/public/js/compiled/out"
@@ -133,6 +142,10 @@
      :source-paths ["src/cljs" "src/cljc"]
      :compiler     {:main            lipas.ui.core
                     :npm-deps        false
+                    :foreign-libs
+                    [{:file     "src/js/leaflet_snap.js"
+                      :provides ["leaflet.snap"]
+                      :requires ["cljsjs.leaflet" "cljsjs.leaflet-draw"]}]
                     :infer-externs   true
                     :output-to       "resources/public/js/compiled/app.js"
                     :optimizations   :advanced

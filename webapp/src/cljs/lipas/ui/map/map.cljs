@@ -3,6 +3,8 @@
             cljsjs.leaflet-draw
             cljsjs.proj4leaflet
             cljsjs.leaflet-markercluster
+            leaflet-geometryutil
+            leaflet-snap
             [goog.object :as gobj]
             [lipas.ui.map.events :as events]
             [lipas.ui.map.subs :as subs]
@@ -30,7 +32,8 @@
     :maastokartta (.tileLayer js/L (:maastokartta urls))
     :taustakartta (.tileLayer js/L (:taustakartta urls))}
    :overlays
-   {:markers (js/L.markerClusterGroup)}})
+   {:markers (js/L.markerClusterGroup)
+    :edit    (js/L.FeatureGroup.)}})
 
 (def resolutions
   #js[8192, 4096, 2048, 1024, 512, 256, 128, 64, 32, 16, 8, 4, 2, 1, 0.5, 0.25])
@@ -60,6 +63,31 @@
       :zoom            zoom
       :layers          #js[base-layer]})
 
+(defn init-draw [^js/L.Map lmap layers]
+  (let [^js/L.FeatureGroup edit-layer (-> layers :overlays :edit)
+
+        error #js {:color   "#e1e100"
+                   :message "<strong>EI EI EI<strong> älä"}
+
+        opts #js{:draw
+                 #js{:polyline     #js{:allowIntersection false
+                                       :drawError         error
+                                       :guideLayers       #js[edit-layer]}
+                     :polygon      #js{:allowIntersection false
+                                       :drawError         error
+                                       :guideLayers       #js[edit-layer]}
+                     :circle       false
+                     :circlemarker false
+                     :rectangle    false}
+                 :edit
+                 #js{:featureGroup edit-layer
+                     :remove       true}}]
+
+    (.addControl lmap (L.Control.Draw. opts))
+    (.on lmap js/L.Draw.Event.CREATED
+         (fn [^js/L.Event e]
+           (.addLayer edit-layer e.layer)))))
+
 (defn add-layer-switcher [^js/L.Map lmap {:keys [basemaps overlays]}]
   (-> js/L
       .-control
@@ -76,6 +104,8 @@
 
     (add-layer-switcher lmap layers)
 
+    (init-draw lmap layers)
+
     (.on lmap "baselayerchange"
          (fn [^js/L.LayersControlEvent e]
            (let [basemap (-> e .-name keyword)]
@@ -83,8 +113,8 @@
 
     (.on lmap "moveend"
          (fn [e]
-           (let [lat  (-> lmap .getCenter .-lat)
-                 lon  (-> lmap .getCenter .-lng)]
+           (let [lat (-> lmap .getCenter .-lat)
+                 lon (-> lmap .getCenter .-lng)]
              (==> [::events/set-center lat lon]))))
 
     (.on lmap "zoomend"
