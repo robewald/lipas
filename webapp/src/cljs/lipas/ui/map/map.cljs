@@ -94,13 +94,13 @@
 
     [lmap layers]))
 
-(defn bind-popup [feature layer]
+(defn bind-popup [feature ^js/L.FeatureGroup layer]
   (.bindPopup layer (gobj/getValueByKeys feature "properties" "name")))
 
-(defn update-markers [lmap layers features]
-  (let [markers (-> layers :overlays :markers)
-        geoJSON (js/L.geoJSON (clj->js features)
-                              #js{:onEachFeature bind-popup})]
+(defn update-markers [^js/L.Map lmap layers features]
+  (let [^js/L.MarkerClusterGroup markers (-> layers :overlays :markers)
+        geoJSON                          (js/L.geoJSON (clj->js features)
+                                                       #js{:onEachFeature bind-popup})]
     (.clearLayers markers)
     (.addLayer markers geoJSON)
     (.addLayer lmap markers)))
