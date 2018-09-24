@@ -106,8 +106,9 @@
     (.addLayer lmap markers)))
 
 (defn map-inner []
-  (let [layers    (atom nil)
-        map-state (atom nil)]
+  (let [layers-state (atom nil)
+        map-state    (atom nil)
+        geoms-state  (atom nil)]
     (r/create-class
      {:reagent-render       (fn [] [mui/grid {:id    "map"
                                               :item  true
@@ -117,11 +118,14 @@
                               (let [{:keys [geoms] :as opts} (r/props comp)
                                     [lmap layers*]           (init-leaflet opts)]
                                 (update-markers lmap layers* geoms)
-                                (reset! layers layers*)
+                                (reset! layers-state layers*)
                                 (reset! map-state lmap)))
       :component-did-update (fn [comp]
-                              (let [opts (r/props comp)]
-                                (update-markers @map-state @layers (:geoms opts))))
+                              (let [opts  (r/props comp)
+                                    geoms (:geoms opts)]
+                                (when (not= @geoms-state geoms)
+                                  (update-markers @map-state @layers-state geoms)
+                                  (reset! geoms-state geoms))))
       :display-name         "leaflet-inner"})))
 
 (defn map-outer []
