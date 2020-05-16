@@ -268,11 +268,10 @@
 (re-frame/reg-event-fx
  ::submit-search
  (fn [{:keys [db]} [_ fit-view?]]
-   (let [params (collect-search-data db)
-         terse? (-> db :search :results-view (= :list))]
+   (let [params  (collect-search-data db)
+         terse?  (-> db :search :results-view (= :list))]
      {:dispatch-n
-      [[::search-fast params fit-view? terse?]
-       [:lipas.ui.events/navigate :lipas.ui.routes.map/map {} params]]})))
+      [[::search-fast params fit-view? terse?]]})))
 
 (re-frame/reg-event-fx
  ::search-with-keyword

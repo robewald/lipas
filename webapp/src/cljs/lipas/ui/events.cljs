@@ -116,3 +116,10 @@
  ::set-screen-size
  (fn [db [_ screen-size]]
    (assoc db :screen-size screen-size)))
+
+(re-frame/reg-event-fx
+ ::set-query-params
+ (fn [{:keys [db]} [_ qparams]]
+   (let [route   (-> db :current-route :data :name)
+         pparams (-> db :current-route :path-params)]
+     {:dispatch [::navigate route pparams qparams]})))

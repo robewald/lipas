@@ -9,6 +9,7 @@
    [goog.string.path :as gpath]
    [lipas.ui.map.utils :as map-utils]
    [lipas.ui.utils :refer [==>] :as utils]
+   [clojure.string :as str]
    proj4
    [re-frame.core :as re-frame]))
 
@@ -108,10 +109,10 @@
  (fn [db [_ zoom]]
    (assoc-in db [:map :zoom] zoom)))
 
-(re-frame/reg-event-db
+(re-frame/reg-event-fx
  ::select-basemap
- (fn [db [_ basemap]]
-   (assoc-in db [:map :basemap] basemap)))
+ (fn [{:keys [db]} [_ basemap]]
+   {:db (assoc-in db [:map :basemap] basemap)}))
 
 (re-frame/reg-event-db
  ::toggle-overlay
@@ -133,6 +134,25 @@
      (-> db
          (assoc-in [:map :mode :lipas-id] lipas-id)
          (assoc-in [:map :drawer-open?] drawer-open?)))))
+
+(re-frame/reg-event-db
+ ::show-link
+ (fn [db [_]]
+   (let [search-params (-> db
+                           :search
+                           (select-keys [:filters :string :pagination :sort]))
+         map-params    (-> db
+                           :map
+                           (select-keys [:zoom :center :basemap]))
+         params        (utils/clean (merge search-params map-params))
+         base-uri      (-> js/window .-location .-href (str/split "?") first)
+         href          (str base-uri "?" (url/map->query params))]
+     (assoc-in db [:map :link] {:open? true :href href}))))
+
+(re-frame/reg-event-db
+ ::hide-link
+ (fn [db [_]]
+   (assoc-in db [:map :link] {:open? false})))
 
 ;; Geom editing events ;;
 

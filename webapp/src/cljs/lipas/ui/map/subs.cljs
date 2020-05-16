@@ -183,6 +183,16 @@
  (fn [db _]
    (-> db :map :drawer-open?)))
 
+(re-frame/reg-sub
+ ::link-open?
+ (fn [db _]
+   (-> db :map :link-open?)))
+
+(re-frame/reg-sub
+ ::link
+ (fn [db _]
+   (-> db :map :link)))
+
 ;; Import geoms ;;
 
 (re-frame/reg-sub

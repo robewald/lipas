@@ -2,6 +2,7 @@
 
 (def default-db
   {:drawer-open?      true
+   :link-open?        false
    :center            {:lon 435047 :lat 7201408}
    :zoom              2
    :mode              {:name :default}

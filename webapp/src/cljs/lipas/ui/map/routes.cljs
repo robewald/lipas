@@ -19,14 +19,19 @@
          (-> match :parameters :query))
        :start
        (fn [params]
-         (let [params (-> params
-                          (update :filters reader/read-string)
-                          (update :sort reader/read-string)
-                          (update :center reader/read-string)
-                          (update :zoom reader/read-string))
-               center (:center params)
-               zoom   (:zoom params)]
-           (when center (==> [:lipas.ui.map.events/set-center-wgs84 (:lat center) (:lon center)]))
+         (let [params  (-> params
+                           (update :filters reader/read-string)
+                           (update :pagination reader/read-string)
+                           (update :sort reader/read-string)
+                           (update :center reader/read-string)
+                           (update :zoom reader/read-string)
+                           (update :basemap reader/read-string))
+               center  (:center params)
+               zoom    (:zoom params)
+               basemap (:basemap params)]
+           (==> [:lipas.ui.events/set-query-params nil])
+           (when center (==> [:lipas.ui.map.events/set-center (:lat center) (:lon center)]))
+           (when basemap (==> [:lipas.ui.map.events/select-basemap basemap]))
            (when zoom (==> [:lipas.ui.map.events/set-zoom zoom]))
            (==> [:lipas.ui.search.events/set-search-params params])
            (==> [:lipas.ui.map.events/show-sports-site* nil])))}]}]

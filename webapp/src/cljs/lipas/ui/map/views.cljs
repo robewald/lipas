@@ -1172,6 +1172,8 @@
         drawer-open?  (<== [::subs/drawer-open?])
         result-view   (<== [:lipas.ui.search.subs/search-results-view])
         selected-site (<== [::subs/selected-sports-site])
+        link-open?    (<== [::subs/link-open?])
+        link          (<== [::subs/link])
         drawer-width  (cond
                         (#{"xs"} width)              "100%"
                         (and (#{"sm"} width)
@@ -1220,6 +1222,17 @@
        ;; Content
        [map-contents-view {:tr tr :logged-in? logged-in? :width width}]]]
 
+     ;; Link dialog
+     [lui/dialog
+      {:open?        (:open? link)
+       :title        "Linkki"
+       :cancel-label "Sulje"
+       :on-close     #(==> [::events/hide-link])}
+      [mui/text-field
+       {:full-width true
+        :value      (:href link)
+        :on-change  #()}]]
+
      ;; Floating container (bottom right)
      [lui/floating-container {:bottom "0.5em" :right "2.75em"}
 
@@ -1228,6 +1241,14 @@
         :align-items "center"
         :style       {:margin-bottom "1px"}
         :spacing     8 :wrap "nowrap"}
+
+       ;; Create link btn
+       [mui/grid {:item true}
+        [mui/paper {:style {:background-color "rgba(255,255,255,0.9)"}}
+         [mui/tooltip {:title "Luo linkki"}
+          [mui/icon-button {:on-click #(==> [::events/show-link])}
+           [mui/icon {:color "default" :font-size "default"}
+            "link"]]]]]
 
        ;; Zoom to users location btn
        [mui/grid {:item true}
