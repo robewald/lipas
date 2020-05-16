@@ -17,6 +17,10 @@
         [lon lat] (js->clj (ol/proj.fromLonLat (clj->js wgs84-coords) proj))]
     {:lon lon :lat lat}))
 
+(defn wgs84->epsg3067-fast [epsg3067-coords]
+  (let [proj      (.get ol/proj "EPSG:3067")]
+    (ol/proj.fromLonLat epsg3067-coords proj)))
+
 (defn epsg3067->wgs84-fast [wgs84-coords]
   (let [proj      (.get ol/proj "EPSG:3067")]
     (ol/proj.toLonLat wgs84-coords proj)))
@@ -92,6 +96,12 @@
  ::set-center
  (fn [db [_ lat lon]]
    (assoc-in db [:map :center] {:lat lat :lon lon})))
+
+(re-frame/reg-event-db
+ ::set-center-wgs84
+ (fn [db [_ lat lon]]
+   (let [coords (wgs84->epsg3067-fast #js[lon lat])]
+     (assoc-in db [:map :center] {:lon (aget coords 0) :lat (aget coords 1)}))))
 
 (re-frame/reg-event-db
  ::set-zoom

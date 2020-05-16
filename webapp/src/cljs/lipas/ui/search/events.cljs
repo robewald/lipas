@@ -270,7 +270,9 @@
  (fn [{:keys [db]} [_ fit-view?]]
    (let [params (collect-search-data db)
          terse? (-> db :search :results-view (= :list))]
-     {:dispatch [::search-fast params fit-view? terse?]})))
+     {:dispatch-n
+      [[::search-fast params fit-view? terse?]
+       [:lipas.ui.events/navigate :lipas.ui.routes.map/map {} params]]})))
 
 (re-frame/reg-event-fx
  ::search-with-keyword
@@ -522,3 +524,12 @@
         (assoc-in [:search :string] string))
     :dispatch [::submit-search]
     :ga/event ["user" "open-saved-search"]}))
+
+(re-frame/reg-event-fx
+ ::set-search-params
+ (fn [{:keys [db]} [_ {:keys [filters string sort]}]]
+   {:db (-> db
+            (assoc-in [:search :filters] filters)
+            (assoc-in [:search :string] string)
+            (assoc-in [:search :sort] sort))
+    :dispatch [::submit-search]}))

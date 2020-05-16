@@ -1,7 +1,8 @@
 (ns lipas.ui.map.routes
   (:require
-   [lipas.ui.utils :as utils :refer [==>]]
-   [lipas.ui.map.views :as views]))
+   [cljs.reader :as reader]
+   [lipas.ui.map.views :as views]
+   [lipas.ui.utils :as utils :refer [==>]]))
 
 (def routes
   ["liikuntapaikat"
@@ -13,9 +14,22 @@
    [""
     {:name :lipas.ui.routes.map/map
      :controllers
-     [{:start
-       (fn [_]
-         (==> [:lipas.ui.map.events/show-sports-site* nil]))}]}]
+     [{:identity
+       (fn [match]
+         (-> match :parameters :query))
+       :start
+       (fn [params]
+         (let [params (-> params
+                          (update :filters reader/read-string)
+                          (update :sort reader/read-string)
+                          (update :center reader/read-string)
+                          (update :zoom reader/read-string))
+               center (:center params)
+               zoom   (:zoom params)]
+           (when center (==> [:lipas.ui.map.events/set-center-wgs84 (:lat center) (:lon center)]))
+           (when zoom (==> [:lipas.ui.map.events/set-zoom zoom]))
+           (==> [:lipas.ui.search.events/set-search-params params])
+           (==> [:lipas.ui.map.events/show-sports-site* nil])))}]}]
 
    ["/:lipas-id"
     {:name       :lipas.ui.routes.map/details-view
